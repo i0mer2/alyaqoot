@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server';
 import { visualize } from '@/lib/ai/service';
 
+export const runtime = 'nodejs';
+export const maxDuration = 60; // توليد الصورة قد يستغرق عدة ثوانٍ
+
 /**
- * نقطة دخول معاينة الستائر — تستخدم طبقة الخدمة المعيارية.
- * الوضع الافتراضي (browser) يخبر العميل بالتركيب محلياً مجاناً.
- * عند تفعيل مزوّد مدفوع، تُعيد رابط صورة مولّدة.
+ * نقطة دخول معاينة الستائر — طبقة خدمة معيارية.
+ * • مع مفتاح GEMINI_API_KEY → دمج واقعي بالذكاء الاصطناعي (يُعيد صورة).
+ * • بدونه → وضع المتصفح المجاني (معاينة سريعة بالـCanvas).
  */
 export async function POST(req: Request) {
   try {

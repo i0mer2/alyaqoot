@@ -3,7 +3,7 @@
 //  يسمح بالتبديل بين: browser (مجاني) | replicate | stability | openai | flux
 // ===========================================================================
 
-export type AIProviderName = 'browser' | 'mock' | 'replicate' | 'stability' | 'openai' | 'flux';
+export type AIProviderName = 'browser' | 'mock' | 'gemini' | 'replicate' | 'stability' | 'openai' | 'flux';
 
 export interface VisualizeRequest {
   /** صورة الغرفة (base64 data URL أو رابط) */

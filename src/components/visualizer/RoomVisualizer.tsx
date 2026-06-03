@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Upload, Download, Plus, RefreshCw, MessageCircle, Trash2, Sparkles, ShoppingBag } from 'lucide-react';
+import { Upload, Download, Plus, RefreshCw, MessageCircle, Trash2, Sparkles, ShoppingBag, Wand2, Loader2, X } from 'lucide-react';
 import { drawScene, type SceneSettings } from '@/lib/visualizer/draw';
 import { products } from '@/lib/data/products';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
@@ -27,6 +27,10 @@ export default function RoomVisualizer() {
   const [productId, setProductId] = useState<string>('p-005');
   const [shots, setShots] = useState<Shot[]>([]);
   const [drag, setDrag] = useState(false);
+  const [roomDataUrl, setRoomDataUrl] = useState<string | null>(null);
+  const [aiImage, setAiImage] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   const product = products.find((p) => p.id === productId);
   const set = (patch: Partial<SceneSettings>) => setSettings((s) => ({ ...s, ...patch }));
@@ -59,12 +63,68 @@ export default function RoomVisualizer() {
     if (!file.type.startsWith('image/')) return;
     const reader = new FileReader();
     reader.onload = (e) => {
+      const url = e.target?.result as string;
       const img = new Image();
-      img.onload = () => { imgRef.current = img; setHasImage(true); };
-      img.src = e.target?.result as string;
+      img.onload = () => { imgRef.current = img; setHasImage(true); setRoomDataUrl(url); setAiImage(null); setAiError(null); };
+      img.src = url;
     };
     reader.readAsDataURL(file);
   }, []);
+
+  /** تصغير صورة الغرفة قبل إرسالها للذكاء الاصطناعي (أسرع وأخف) */
+  const downscaledRoom = (max = 1280): string | null => {
+    const img = imgRef.current;
+    if (!img) return roomDataUrl;
+    const scale = Math.min(1, max / Math.max(img.width, img.height));
+    const w = Math.round(img.width * scale);
+    const h = Math.round(img.height * scale);
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const ctx = c.getContext('2d');
+    if (!ctx) return roomDataUrl;
+    ctx.drawImage(img, 0, 0, w, h);
+    return c.toDataURL('image/jpeg', 0.85);
+  };
+
+  /** الدمج الواقعي عبر الذكاء الاصطناعي */
+  const generateAI = async () => {
+    const room = downscaledRoom();
+    if (!room) { setAiError(L ? 'حمّل صورة غرفتك أولاً 📷' : 'Upload a room photo first'); return; }
+    setAiLoading(true); setAiError(null);
+    try {
+      const styleName = product ? (L ? product.name_ar : product.name_en) : '';
+      const r = await fetch('/api/ai/visualize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          roomImage: room, color: settings.color, pattern: settings.pattern,
+          sheer: settings.sheer, productId, prompt: styleName,
+        }),
+      });
+      const data = await r.json();
+      if (data.mode === 'image' && data.imageUrl) {
+        setAiImage(data.imageUrl);
+      } else if (data.error) {
+        setAiError(data.error);
+      } else {
+        setAiError(L
+          ? 'الدمج الواقعي غير مُفعّل بعد — يلزم إضافة مفتاح Gemini المجاني في إعدادات الموقع.'
+          : 'AI realistic mode not configured yet.');
+      }
+    } catch (e: any) {
+      setAiError(e?.message ?? 'error');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const downloadAi = () => {
+    if (!aiImage) return;
+    const a = document.createElement('a');
+    a.download = 'alyaqoot-ai-preview.png';
+    a.href = aiImage;
+    a.click();
+  };
 
   const selectProduct = (id: string) => {
     const p = products.find((x) => x.id === id);
@@ -122,6 +182,43 @@ export default function RoomVisualizer() {
             </label>
           )}
         </div>
+
+        {/* زر الدمج الواقعي بالذكاء الاصطناعي */}
+        <button
+          onClick={generateAI}
+          disabled={!hasImage || aiLoading}
+          className="btn-ruby mt-4 w-full disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {aiLoading ? (
+            <><Loader2 size={18} className="animate-spin" /> {L ? 'جاري الدمج الواقعي… (ثوانٍ)' : 'Generating…'}</>
+          ) : (
+            <><Wand2 size={18} /> {L ? '✨ دمج واقعي بالذكاء الاصطناعي' : '✨ AI realistic merge'}</>
+          )}
+        </button>
+        {!hasImage && (
+          <p className="mt-1.5 text-center text-xs text-ink-muted">
+            {L ? 'حمّل صورة غرفتك ثم اضغط الزر لدمج الستارة واقعياً' : 'Upload a room photo, then merge'}
+          </p>
+        )}
+        {aiError && <p className="mt-2 rounded-xl bg-ruby-50 px-3 py-2 text-sm text-ruby-800">{aiError}</p>}
+
+        {/* النتيجة الواقعية من الذكاء الاصطناعي */}
+        {aiImage && (
+          <div className="mt-4 rounded-3xl border border-champagne/50 bg-white p-3 shadow-luxe">
+            <div className="mb-2 flex items-center justify-between">
+              <h4 className="flex items-center gap-2 font-display text-lg text-ink">
+                <Sparkles size={18} className="text-champagne-600" /> {L ? 'النتيجة الواقعية ✨' : 'Realistic result ✨'}
+              </h4>
+              <div className="flex items-center gap-2">
+                <button onClick={downloadAi} className="btn-outline px-3 py-1.5 text-xs"><Download size={14} /> {L ? 'تحميل' : 'Save'}</button>
+                <a href={waLink(orderMsg)} target="_blank" rel="noopener noreferrer" className="btn-ruby px-3 py-1.5 text-xs"><MessageCircle size={14} /> {L ? 'اطلبها' : 'Order'}</a>
+                <button onClick={() => setAiImage(null)} className="grid h-8 w-8 place-items-center rounded-full hover:bg-platinum-100"><X size={16} /></button>
+              </div>
+            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={aiImage} alt="AI preview" className="w-full rounded-2xl" />
+          </div>
+        )}
 
         {/* أدوات */}
         <div className="mt-4 flex flex-wrap gap-2">
