@@ -31,6 +31,10 @@ export default function RoomVisualizer() {
   const [aiImage, setAiImage] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [apiKey, setApiKey] = useState('');
+
+  useEffect(() => { setApiKey(localStorage.getItem('gemini_key') || ''); }, []);
+  const saveKey = (v: string) => { setApiKey(v); localStorage.setItem('gemini_key', v); };
 
   const product = products.find((p) => p.id === productId);
   const set = (patch: Partial<SceneSettings>) => setSettings((s) => ({ ...s, ...patch }));
@@ -99,6 +103,7 @@ export default function RoomVisualizer() {
         body: JSON.stringify({
           roomImage: room, color: settings.color, pattern: settings.pattern,
           sheer: settings.sheer, productId, prompt: styleName,
+          apiKey: apiKey || undefined,
         }),
       });
       const data = await r.json();
@@ -108,8 +113,8 @@ export default function RoomVisualizer() {
         setAiError(data.error);
       } else {
         setAiError(L
-          ? 'الدمج الواقعي غير مُفعّل بعد — يلزم إضافة مفتاح Gemini المجاني في إعدادات الموقع.'
-          : 'AI realistic mode not configured yet.');
+          ? 'لتفعيل الدمج الواقعي أدخل مفتاح Gemini الخاص بك في الأسفل 👇 (مجاني ويُحفظ بجهازك فقط).'
+          : 'Enter your own Gemini key below to enable realistic merge.');
       }
     } catch (e: any) {
       setAiError(e?.message ?? 'error');
@@ -201,6 +206,39 @@ export default function RoomVisualizer() {
           </p>
         )}
         {aiError && <p className="mt-2 rounded-xl bg-ruby-50 px-3 py-2 text-sm text-ruby-800">{aiError}</p>}
+
+        {/* مفتاح الزبون الخاص (BYOK) — اختياري */}
+        <details className="group mt-2 rounded-2xl border border-platinum-200 bg-white/70 p-3" open={!apiKey && !!aiError}>
+          <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-semibold text-ink">
+            <span className="text-champagne-600">🔑</span>
+            {apiKey
+              ? (L ? 'مفتاحك الخاص مُفعّل ✓ (اضغط للتعديل)' : 'Your key is active ✓')
+              : (L ? 'تفعيل الدمج الواقعي بمفتاحك الخاص (اختياري)' : 'Enable realistic merge with your own key')}
+          </summary>
+          <div className="mt-3 space-y-2">
+            <p className="text-xs leading-relaxed text-ink-muted">
+              {L
+                ? 'التجربة الواقعية اختيارية وتعمل بمفتاح Gemini المجاني الخاص بك. المفتاح يُحفظ في متصفّحك فقط ولا نراه إطلاقاً — تستخدمه أنت على حسابك.'
+                : 'Optional. Uses your own free Gemini key, stored only in your browser.'}
+            </p>
+            <input
+              type="password"
+              value={apiKey}
+              onChange={(e) => saveKey(e.target.value.trim())}
+              placeholder="AIza..."
+              dir="ltr"
+              className="w-full rounded-xl border border-platinum-300 px-3 py-2 text-sm outline-none focus:border-champagne"
+            />
+            <a
+              href="https://aistudio.google.com/apikey"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block text-xs font-semibold text-ruby-700 hover:underline"
+            >
+              {L ? '← احصل على مفتاح مجاني من Google AI Studio' : 'Get a free key →'}
+            </a>
+          </div>
+        </details>
 
         {/* النتيجة الواقعية من الذكاء الاصطناعي */}
         {aiImage && (

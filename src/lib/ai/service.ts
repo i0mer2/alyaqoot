@@ -27,7 +27,8 @@ export function getProvider(): AIProvider {
 }
 
 export async function visualize(req: VisualizeRequest): Promise<VisualizeResult> {
-  const provider = getProvider();
+  // إن أرسل المستخدم مفتاحه الخاص (BYOK) → استخدم Gemini مباشرةً
+  const provider = req.apiKey ? geminiProvider : getProvider();
   const t0 = Date.now();
   const res = await provider.visualize(req);
   return { ...res, latencyMs: Date.now() - t0 };

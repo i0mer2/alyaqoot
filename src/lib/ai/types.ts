@@ -17,6 +17,8 @@ export interface VisualizeRequest {
   sheer: boolean;
   /** نص إرشادي للمزوّدات النصية (OpenAI/Flux) */
   prompt?: string;
+  /** مفتاح المستخدم الخاص (BYOK) — يُحفظ بجهازه فقط ولا يُخزَّن لدينا */
+  apiKey?: string;
 }
 
 export interface VisualizeResult {

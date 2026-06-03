@@ -35,12 +35,13 @@ function buildPrompt(req: VisualizeRequest): string {
 export const geminiProvider: AIProvider = {
   name: 'gemini' as any,
   async visualize(req: VisualizeRequest): Promise<VisualizeResult> {
-    const apiKey = process.env.GEMINI_API_KEY;
+    // أولوية لمفتاح المستخدم الخاص (BYOK)، ثم مفتاح الخادم إن وُجد
+    const apiKey = req.apiKey || process.env.GEMINI_API_KEY;
     if (!apiKey) {
       return {
         provider: 'browser',
         mode: 'client-composite',
-        message: 'مفتاح Gemini غير مضبوط — يُستخدم وضع المعاينة المجاني داخل المتصفح.',
+        message: 'لم يُدخَل مفتاح — يُستخدم وضع المعاينة المجاني داخل المتصفح.',
       };
     }
 

@@ -19,6 +19,7 @@ export async function POST(req: Request) {
       sheer: Boolean(body.sheer),
       productId: body.productId,
       prompt: body.prompt,
+      apiKey: body.apiKey,
     });
     return NextResponse.json(result);
   } catch (e) {
