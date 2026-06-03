@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(node -v)",
+      "PowerShell(npm -v)",
+      "PowerShell(Get-ChildItem -Recurse -File -Name | Where-Object { $_ -notmatch 'node_modules|\\\\.next|\\\\.git' } | Sort-Object)",
+      "mcp__Claude_Preview__preview_start"
+    ]
+  }
+}

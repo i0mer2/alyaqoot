@@ -1,0 +1,145 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =====================================================================
+   ستائر الياقوت — Global styles
+   ===================================================================== */
+
+:root {
+  --color-ruby: #8a1b3d;
+  --color-gold: #d0a35e;
+  --color-ivory: #f7f4ef;
+  --color-ink: #1a1718;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-ivory text-ink font-arabic antialiased;
+    background-image: radial-gradient(
+        circle at 15% 0%,
+        rgba(208, 163, 94, 0.06),
+        transparent 40%
+      ),
+      radial-gradient(circle at 85% 10%, rgba(138, 27, 61, 0.05), transparent 45%);
+  }
+
+  /* العناوين بخط فخم */
+  h1, h2, h3 {
+    font-family: var(--font-display), serif;
+    letter-spacing: 0;
+  }
+
+  /* الاتجاه من اليمين لليسار */
+  [dir='rtl'] body {
+    text-align: right;
+  }
+
+  ::selection {
+    background: var(--color-ruby);
+    color: #fff;
+  }
+}
+
+@layer components {
+  /* عنوان متدرّج ذهبي/ياقوتي */
+  .text-gradient-gold {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(120deg, #d0a35e 0%, #f0d9a8 40%, #b0723a 100%);
+  }
+  .text-gradient-ruby {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(120deg, #c52c58, #8a1b3d 60%, #5b1228);
+  }
+
+  /* فاصل ذهبي مزخرف */
+  .gold-divider {
+    @apply relative h-px w-full;
+    background: linear-gradient(90deg, transparent, rgba(208, 163, 94, 0.7), transparent);
+  }
+
+  /* زجاجي فاخر */
+  .glass {
+    @apply backdrop-blur-xl;
+    background: rgba(255, 255, 255, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+  }
+  .glass-dark {
+    @apply backdrop-blur-xl;
+    background: rgba(26, 23, 24, 0.55);
+    border: 1px solid rgba(208, 163, 94, 0.18);
+  }
+
+  /* بطاقة فاخرة */
+  .card-luxe {
+    @apply rounded-3xl bg-white shadow-soft transition-all duration-500;
+    border: 1px solid rgba(176, 176, 187, 0.25);
+  }
+  .card-luxe:hover {
+    @apply shadow-luxe -translate-y-1;
+    border-color: rgba(208, 163, 94, 0.5);
+  }
+
+  /* الأزرار */
+  .btn-ruby {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-ruby-gradient px-7 py-3
+           font-semibold text-white shadow-luxe transition-all duration-300 hover:scale-[1.03]
+           hover:shadow-gold active:scale-95;
+  }
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-champagne/60
+           px-7 py-3 font-semibold text-ink transition-all duration-300 hover:bg-champagne/10
+           hover:border-champagne active:scale-95;
+  }
+  /* زر أبيض فاخر (للخلفيات الداكنة) — نص ياقوتي بتباين عالٍ */
+  .btn-white {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-3
+           font-semibold text-ruby-800 shadow-luxe transition-all duration-300
+           hover:scale-[1.03] hover:bg-ivory active:scale-95;
+  }
+
+  /* تأثير لمعان فضي */
+  .shimmer {
+    background: linear-gradient(110deg, #e4e4e8 8%, #f8f8f9 18%, #e4e4e8 33%);
+    background-size: 200% 100%;
+    @apply animate-shimmer;
+  }
+
+  .container-luxe {
+    @apply mx-auto w-full max-w-7xl px-5 sm:px-8;
+  }
+
+  .section-pad {
+    @apply py-20 md:py-28;
+  }
+}
+
+/* شريط تمرير فاخر */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #efeae1;
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(#a51f46, #5b1228);
+  border-radius: 999px;
+}
+
+/* احترام تفضيل تقليل الحركة */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
