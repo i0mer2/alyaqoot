@@ -32,6 +32,7 @@ export default function RoomVisualizer() {
   const [copied, setCopied] = useState(false);
   const [geminiPrompt, setGeminiPrompt] = useState('');
   const [showReel, setShowReel] = useState(false);
+  const [roomDataUrl, setRoomDataUrl] = useState<string | null>(null);
 
   const product = products.find((p) => p.id === productId);
   const set = (patch: Partial<SceneSettings>) => setSettings((s) => ({ ...s, ...patch }));
@@ -66,7 +67,7 @@ export default function RoomVisualizer() {
     reader.onload = (e) => {
       const url = e.target?.result as string;
       const img = new Image();
-      img.onload = () => { imgRef.current = img; setHasImage(true); setShowGuide(false); };
+      img.onload = () => { imgRef.current = img; setHasImage(true); setShowGuide(false); setRoomDataUrl(url); };
       img.src = url;
     };
     reader.readAsDataURL(file);
@@ -113,6 +114,15 @@ export default function RoomVisualizer() {
 
   const copyPrompt = async () => {
     try { await navigator.clipboard.writeText(geminiPrompt); setCopied(true); setTimeout(() => setCopied(false), 3000); } catch {}
+  };
+
+  /** تنزيل صورة الغرفة الأصلية (نظيفة) لرفعها داخل Gemini */
+  const downloadRoom = () => {
+    if (!roomDataUrl) return;
+    const a = document.createElement('a');
+    a.download = 'my-room.jpg';
+    a.href = roomDataUrl;
+    a.click();
   };
 
   const selectProduct = (id: string) => {
@@ -200,10 +210,10 @@ export default function RoomVisualizer() {
               {L ? 'فتحنا لك Gemini على حسابك المجاني ✨' : 'Opened Gemini on your account ✨'}
             </h4>
             <ol className="space-y-1.5 text-sm text-ink-soft" style={{ listStyle: 'decimal', paddingInlineStart: '1.2rem' }}>
-              <li>{L ? 'سجّل دخول بحساب Google (إذا ما كنت داخل).' : 'Sign in to Google.'}</li>
+              <li>{L ? 'احفظ صورة غرفتك بالزر تحت (لترفعها في Gemini).' : 'Save your room photo below.'}</li>
+              <li>{L ? 'في Gemini: اضغط أيقونة الصورة 🖼️ وارفع صورة غرفتك.' : 'In Gemini, attach your room photo.'}</li>
               <li>{L ? 'الصق النص (نسخناه لك تلقائياً) في خانة الكتابة.' : 'Paste the prompt.'}</li>
-              <li>{L ? 'اضغط أيقونة الصورة 🖼️ وارفع صورة غرفتك، ثم أرسل.' : 'Attach your room photo & send.'}</li>
-              <li>{L ? 'راح تطلع لك الصورة الواقعية على حسابك مجاناً.' : 'Get your realistic image free.'}</li>
+              <li>{L ? 'اضغط إرسال ➤ وتطلع الصورة الواقعية على حسابك.' : 'Send → get your realistic image.'}</li>
             </ol>
 
             <p className="mt-3 mb-1 text-xs font-semibold text-ink">
@@ -213,6 +223,9 @@ export default function RoomVisualizer() {
               <p className="text-xs leading-relaxed text-ink-muted">{geminiPrompt}</p>
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
+              <button onClick={downloadRoom} className="btn-outline px-3 py-1.5 text-xs">
+                <Download size={14} /> {L ? 'احفظ صورة غرفتك' : 'Save room photo'}
+              </button>
               <button onClick={copyPrompt} className="btn-outline px-3 py-1.5 text-xs">
                 {copied ? (L ? 'تم النسخ ✓' : 'Copied ✓') : (L ? 'نسخ النص مجدداً' : 'Copy again')}
               </button>
