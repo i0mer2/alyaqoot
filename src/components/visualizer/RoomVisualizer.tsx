@@ -85,17 +85,20 @@ export default function RoomVisualizer() {
       ? 'sheer, light, semi-transparent voile/tulle'
       : 'rich, premium, opaque';
 
-    // برومبت احترافي بالإنجليزية (يعطي أدق دمج مع الحفاظ على الغرفة كما هي)
+    // برومبت احترافي بالإنجليزية: تعديل الصورة المرفقة فقط (لا إنشاء غرفة جديدة)
     const prompt =
-      `Edit this photo of my room. Add realistic ${fabricWord} window curtains with ${patternWord}, ` +
-      `in this exact color ${colorText}${styleName ? `, styled like "${styleName}"` : ''}. ` +
-      `The curtains hang from a rod at the top of the window and drape naturally down to the floor ` +
-      `with soft, realistic vertical folds and a gentle fabric sheen. ` +
-      `Match the room's existing lighting, shadows, perspective and white balance so the curtains look ` +
-      `professionally and naturally installed. ` +
-      `VERY IMPORTANT: keep everything else in the photo EXACTLY the same — do NOT change or move the walls, ` +
-      `furniture, floor, decor, objects, colors, layout, camera angle or lighting. Only add the curtains over the window. ` +
-      `Output one single photorealistic, professional, high-detail interior photograph.`;
+      `IMPORTANT: Edit the attached photo of my REAL room. Do NOT generate a new room or a new scene, ` +
+      `do NOT change the camera angle, and do NOT replace the photo — only modify the attached image itself.\n\n` +
+      `Task: dress ONLY the existing window with realistic ${fabricWord} curtains featuring ${patternWord}, ` +
+      `in this exact color ${colorText}${styleName ? ` (style: "${styleName}")` : ''}.\n` +
+      `• Size and align the curtains correctly to the existing window frame. Do NOT make them oversized and do NOT cover ` +
+      `the bed, walls, or other furniture.\n` +
+      `• Hang them from a slim rod just above the window; let them fall straight to the floor with natural soft folds, ` +
+      `realistic fabric texture, a subtle sheen, and correct perspective.\n` +
+      `• Add shadows and lighting that exactly match the room's existing light direction and white balance.\n\n` +
+      `Keep the walls, ceiling, floor, bed, furniture, decor, plants, colors, layout, camera angle and lighting ` +
+      `EXACTLY as in the original photo. The result must look like the SAME photograph with only new curtains added ` +
+      `to the window — seamless, photorealistic, professional, high detail. Output a single edited image.`;
     setGeminiPrompt(prompt);
     try {
       await navigator.clipboard.writeText(prompt);
