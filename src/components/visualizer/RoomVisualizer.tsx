@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Upload, Download, Plus, RefreshCw, MessageCircle, Trash2, Sparkles, ShoppingBag, Wand2, Loader2, X } from 'lucide-react';
+import { Upload, Download, Plus, RefreshCw, MessageCircle, Trash2, Sparkles, ShoppingBag, Wand2 } from 'lucide-react';
 import { drawScene, type SceneSettings } from '@/lib/visualizer/draw';
 import { products } from '@/lib/data/products';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
@@ -27,14 +27,9 @@ export default function RoomVisualizer() {
   const [productId, setProductId] = useState<string>('p-005');
   const [shots, setShots] = useState<Shot[]>([]);
   const [drag, setDrag] = useState(false);
-  const [roomDataUrl, setRoomDataUrl] = useState<string | null>(null);
-  const [aiImage, setAiImage] = useState<string | null>(null);
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiError, setAiError] = useState<string | null>(null);
-  const [apiKey, setApiKey] = useState('');
-
-  useEffect(() => { setApiKey(localStorage.getItem('gemini_key') || ''); }, []);
-  const saveKey = (v: string) => { setApiKey(v); localStorage.setItem('gemini_key', v); };
+  const [showGuide, setShowGuide] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [geminiPrompt, setGeminiPrompt] = useState('');
 
   const product = products.find((p) => p.id === productId);
   const set = (patch: Partial<SceneSettings>) => setSettings((s) => ({ ...s, ...patch }));
@@ -69,66 +64,36 @@ export default function RoomVisualizer() {
     reader.onload = (e) => {
       const url = e.target?.result as string;
       const img = new Image();
-      img.onload = () => { imgRef.current = img; setHasImage(true); setRoomDataUrl(url); setAiImage(null); setAiError(null); };
+      img.onload = () => { imgRef.current = img; setHasImage(true); setShowGuide(false); };
       img.src = url;
     };
     reader.readAsDataURL(file);
   }, []);
 
-  /** تصغير صورة الغرفة قبل إرسالها للذكاء الاصطناعي (أسرع وأخف) */
-  const downscaledRoom = (max = 1280): string | null => {
-    const img = imgRef.current;
-    if (!img) return roomDataUrl;
-    const scale = Math.min(1, max / Math.max(img.width, img.height));
-    const w = Math.round(img.width * scale);
-    const h = Math.round(img.height * scale);
-    const c = document.createElement('canvas');
-    c.width = w; c.height = h;
-    const ctx = c.getContext('2d');
-    if (!ctx) return roomDataUrl;
-    ctx.drawImage(img, 0, 0, w, h);
-    return c.toDataURL('image/jpeg', 0.85);
-  };
-
-  /** الدمج الواقعي عبر الذكاء الاصطناعي */
-  const generateAI = async () => {
-    const room = downscaledRoom();
-    if (!room) { setAiError(L ? 'حمّل صورة غرفتك أولاً 📷' : 'Upload a room photo first'); return; }
-    setAiLoading(true); setAiError(null);
+  /** يفتح تطبيق Gemini على حساب الزبون المجاني مع نسخ الطلب الجاهز */
+  const openInGemini = async () => {
+    const styleName = product ? (L ? product.name_ar : product.name_en) : '';
+    const patternWord =
+      settings.pattern === 'damask' ? 'بنقشة دمشقية فاخرة'
+      : settings.pattern === 'stripe' ? 'مخطّطة'
+      : 'سادة';
+    const fabricWord = settings.sheer ? 'شفّافة (تول) خفيفة' : 'فخمة';
+    const prompt =
+      `عدّل هذه الصورة لغرفتي وأضِف ستائر ${fabricWord} ${patternWord} بلون (${settings.color})` +
+      `${styleName ? ` على طراز "${styleName}"` : ''}، تتدلّى من أعلى النافذة حتى الأرض بكسرات وطيّات واقعية ` +
+      `وإضاءة وظلال تطابق الغرفة، مع إبقاء باقي الغرفة (الجدران والأثاث والأرضية) كما هي وبشكل فوتوغرافي واقعي.`;
+    setGeminiPrompt(prompt);
     try {
-      const styleName = product ? (L ? product.name_ar : product.name_en) : '';
-      const r = await fetch('/api/ai/visualize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          roomImage: room, color: settings.color, pattern: settings.pattern,
-          sheer: settings.sheer, productId, prompt: styleName,
-          apiKey: apiKey || undefined,
-        }),
-      });
-      const data = await r.json();
-      if (data.mode === 'image' && data.imageUrl) {
-        setAiImage(data.imageUrl);
-      } else if (data.error) {
-        setAiError(data.error);
-      } else {
-        setAiError(L
-          ? 'لتفعيل الدمج الواقعي أدخل مفتاح Gemini الخاص بك في الأسفل 👇 (مجاني ويُحفظ بجهازك فقط).'
-          : 'Enter your own Gemini key below to enable realistic merge.');
-      }
-    } catch (e: any) {
-      setAiError(e?.message ?? 'error');
-    } finally {
-      setAiLoading(false);
-    }
+      await navigator.clipboard.writeText(prompt);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    } catch { /* المتصفح قد يمنع النسخ التلقائي */ }
+    window.open('https://gemini.google.com/app', '_blank', 'noopener');
+    setShowGuide(true);
   };
 
-  const downloadAi = () => {
-    if (!aiImage) return;
-    const a = document.createElement('a');
-    a.download = 'alyaqoot-ai-preview.png';
-    a.href = aiImage;
-    a.click();
+  const copyPrompt = async () => {
+    try { await navigator.clipboard.writeText(geminiPrompt); setCopied(true); setTimeout(() => setCopied(false), 3000); } catch {}
   };
 
   const selectProduct = (id: string) => {
@@ -188,73 +153,48 @@ export default function RoomVisualizer() {
           )}
         </div>
 
-        {/* زر الدمج الواقعي بالذكاء الاصطناعي */}
+        {/* زر الدمج الواقعي عبر Gemini (مجاني على حساب الزبون) */}
         <button
-          onClick={generateAI}
-          disabled={!hasImage || aiLoading}
+          onClick={openInGemini}
+          disabled={!hasImage}
           className="btn-ruby mt-4 w-full disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {aiLoading ? (
-            <><Loader2 size={18} className="animate-spin" /> {L ? 'جاري الدمج الواقعي… (ثوانٍ)' : 'Generating…'}</>
-          ) : (
-            <><Wand2 size={18} /> {L ? '✨ دمج واقعي بالذكاء الاصطناعي' : '✨ AI realistic merge'}</>
-          )}
+          <Wand2 size={18} /> {L ? '✨ دمج واقعي بالذكاء الاصطناعي (مجاني)' : '✨ AI realistic merge (free)'}
         </button>
         {!hasImage && (
           <p className="mt-1.5 text-center text-xs text-ink-muted">
-            {L ? 'حمّل صورة غرفتك ثم اضغط الزر لدمج الستارة واقعياً' : 'Upload a room photo, then merge'}
+            {L ? 'حمّل صورة غرفتك أولاً ثم اضغط الزر' : 'Upload a room photo first'}
           </p>
         )}
-        {aiError && <p className="mt-2 rounded-xl bg-ruby-50 px-3 py-2 text-sm text-ruby-800">{aiError}</p>}
 
-        {/* مفتاح الزبون الخاص (BYOK) — اختياري */}
-        <details className="group mt-2 rounded-2xl border border-platinum-200 bg-white/70 p-3" open={!apiKey && !!aiError}>
-          <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-semibold text-ink">
-            <span className="text-champagne-600">🔑</span>
-            {apiKey
-              ? (L ? 'مفتاحك الخاص مُفعّل ✓ (اضغط للتعديل)' : 'Your key is active ✓')
-              : (L ? 'تفعيل الدمج الواقعي بمفتاحك الخاص (اختياري)' : 'Enable realistic merge with your own key')}
-          </summary>
-          <div className="mt-3 space-y-2">
-            <p className="text-xs leading-relaxed text-ink-muted">
-              {L
-                ? 'التجربة الواقعية اختيارية وتعمل بمفتاح Gemini المجاني الخاص بك. المفتاح يُحفظ في متصفّحك فقط ولا نراه إطلاقاً — تستخدمه أنت على حسابك.'
-                : 'Optional. Uses your own free Gemini key, stored only in your browser.'}
-            </p>
-            <input
-              type="password"
-              value={apiKey}
-              onChange={(e) => saveKey(e.target.value.trim())}
-              placeholder="AIza..."
-              dir="ltr"
-              className="w-full rounded-xl border border-platinum-300 px-3 py-2 text-sm outline-none focus:border-champagne"
-            />
-            <a
-              href="https://aistudio.google.com/apikey"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block text-xs font-semibold text-ruby-700 hover:underline"
-            >
-              {L ? '← احصل على مفتاح مجاني من Google AI Studio' : 'Get a free key →'}
-            </a>
-          </div>
-        </details>
+        {/* بطاقة الإرشاد بعد فتح Gemini */}
+        {showGuide && (
+          <div className="mt-3 rounded-2xl border border-champagne/50 bg-white p-4 shadow-soft">
+            <h4 className="mb-2 flex items-center gap-2 font-display text-lg text-ink">
+              <Sparkles size={18} className="text-champagne-600" />
+              {L ? 'فتحنا لك Gemini على حسابك المجاني ✨' : 'Opened Gemini on your account ✨'}
+            </h4>
+            <ol className="space-y-1.5 text-sm text-ink-soft" style={{ listStyle: 'decimal', paddingInlineStart: '1.2rem' }}>
+              <li>{L ? 'سجّل دخول بحساب Google (إذا ما كنت داخل).' : 'Sign in to Google.'}</li>
+              <li>{L ? 'الصق النص (نسخناه لك تلقائياً) في خانة الكتابة.' : 'Paste the prompt.'}</li>
+              <li>{L ? 'اضغط أيقونة الصورة 🖼️ وارفع صورة غرفتك، ثم أرسل.' : 'Attach your room photo & send.'}</li>
+              <li>{L ? 'راح تطلع لك الصورة الواقعية على حسابك مجاناً.' : 'Get your realistic image free.'}</li>
+            </ol>
 
-        {/* النتيجة الواقعية من الذكاء الاصطناعي */}
-        {aiImage && (
-          <div className="mt-4 rounded-3xl border border-champagne/50 bg-white p-3 shadow-luxe">
-            <div className="mb-2 flex items-center justify-between">
-              <h4 className="flex items-center gap-2 font-display text-lg text-ink">
-                <Sparkles size={18} className="text-champagne-600" /> {L ? 'النتيجة الواقعية ✨' : 'Realistic result ✨'}
-              </h4>
-              <div className="flex items-center gap-2">
-                <button onClick={downloadAi} className="btn-outline px-3 py-1.5 text-xs"><Download size={14} /> {L ? 'تحميل' : 'Save'}</button>
-                <a href={waLink(orderMsg)} target="_blank" rel="noopener noreferrer" className="btn-ruby px-3 py-1.5 text-xs"><MessageCircle size={14} /> {L ? 'اطلبها' : 'Order'}</a>
-                <button onClick={() => setAiImage(null)} className="grid h-8 w-8 place-items-center rounded-full hover:bg-platinum-100"><X size={16} /></button>
-              </div>
+            <div className="mt-3 rounded-xl bg-ivory-deep p-3">
+              <p className="text-xs leading-relaxed text-ink-muted">{geminiPrompt}</p>
             </div>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={aiImage} alt="AI preview" className="w-full rounded-2xl" />
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button onClick={copyPrompt} className="btn-outline px-3 py-1.5 text-xs">
+                {copied ? (L ? 'تم النسخ ✓' : 'Copied ✓') : (L ? 'نسخ النص مجدداً' : 'Copy again')}
+              </button>
+              <a href="https://gemini.google.com/app" target="_blank" rel="noopener noreferrer" className="btn-ruby px-3 py-1.5 text-xs">
+                <Wand2 size={14} /> {L ? 'فتح Gemini' : 'Open Gemini'}
+              </a>
+            </div>
+            <p className="mt-2 text-[11px] text-ink-muted">
+              {L ? '💡 مجاني تماماً على حسابك — والنتيجة عندك. بعدها ارجع واطلب الستارة عبر واتساب.' : 'Free on your account.'}
+            </p>
           </div>
         )}
 
