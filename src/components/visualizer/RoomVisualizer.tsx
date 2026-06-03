@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Upload, Download, Plus, RefreshCw, MessageCircle, Trash2, Sparkles, ShoppingBag, Wand2 } from 'lucide-react';
+import { Upload, Download, Plus, RefreshCw, MessageCircle, Trash2, Sparkles, ShoppingBag, Wand2, PlayCircle } from 'lucide-react';
+import HowToReel from './HowToReel';
 import { drawScene, type SceneSettings } from '@/lib/visualizer/draw';
 import { products } from '@/lib/data/products';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
@@ -30,6 +31,7 @@ export default function RoomVisualizer() {
   const [showGuide, setShowGuide] = useState(false);
   const [copied, setCopied] = useState(false);
   const [geminiPrompt, setGeminiPrompt] = useState('');
+  const [showReel, setShowReel] = useState(false);
 
   const product = products.find((p) => p.id === productId);
   const set = (patch: Partial<SceneSettings>) => setSettings((s) => ({ ...s, ...patch }));
@@ -177,6 +179,12 @@ export default function RoomVisualizer() {
           className="btn-ruby mt-4 w-full disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Wand2 size={18} /> {L ? '✨ دمج واقعي بالذكاء الاصطناعي (مجاني)' : '✨ AI realistic merge (free)'}
+        </button>
+        <button
+          onClick={() => setShowReel(true)}
+          className="mt-2 flex w-full items-center justify-center gap-2 text-sm font-semibold text-ruby-700 transition hover:underline"
+        >
+          <PlayCircle size={18} /> {L ? 'شاهد الشرح المتحرّك: كيف تستخدم الأداة؟' : 'Watch the animated tutorial'}
         </button>
         {!hasImage && (
           <p className="mt-1.5 text-center text-xs text-ink-muted">
@@ -328,6 +336,8 @@ export default function RoomVisualizer() {
           )}
         </div>
       </aside>
+
+      <HowToReel open={showReel} onClose={() => setShowReel(false)} />
     </div>
   );
 }
