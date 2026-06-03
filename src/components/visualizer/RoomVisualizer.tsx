@@ -72,16 +72,30 @@ export default function RoomVisualizer() {
 
   /** يفتح تطبيق Gemini على حساب الزبون المجاني مع نسخ الطلب الجاهز */
   const openInGemini = async () => {
-    const styleName = product ? (L ? product.name_ar : product.name_en) : '';
+    const styleName = product ? product.name_en : '';
+    const colorName = product?.colors.find(
+      (c) => c.hex.toLowerCase() === settings.color.toLowerCase(),
+    )?.name_en;
+    const colorText = colorName ? `${colorName} (${settings.color})` : settings.color;
     const patternWord =
-      settings.pattern === 'damask' ? 'بنقشة دمشقية فاخرة'
-      : settings.pattern === 'stripe' ? 'مخطّطة'
-      : 'سادة';
-    const fabricWord = settings.sheer ? 'شفّافة (تول) خفيفة' : 'فخمة';
+      settings.pattern === 'damask' ? 'an elegant damask pattern'
+      : settings.pattern === 'stripe' ? 'subtle vertical stripes'
+      : 'a solid, smooth finish';
+    const fabricWord = settings.sheer
+      ? 'sheer, light, semi-transparent voile/tulle'
+      : 'rich, premium, opaque';
+
+    // برومبت احترافي بالإنجليزية (يعطي أدق دمج مع الحفاظ على الغرفة كما هي)
     const prompt =
-      `عدّل هذه الصورة لغرفتي وأضِف ستائر ${fabricWord} ${patternWord} بلون (${settings.color})` +
-      `${styleName ? ` على طراز "${styleName}"` : ''}، تتدلّى من أعلى النافذة حتى الأرض بكسرات وطيّات واقعية ` +
-      `وإضاءة وظلال تطابق الغرفة، مع إبقاء باقي الغرفة (الجدران والأثاث والأرضية) كما هي وبشكل فوتوغرافي واقعي.`;
+      `Edit this photo of my room. Add realistic ${fabricWord} window curtains with ${patternWord}, ` +
+      `in this exact color ${colorText}${styleName ? `, styled like "${styleName}"` : ''}. ` +
+      `The curtains hang from a rod at the top of the window and drape naturally down to the floor ` +
+      `with soft, realistic vertical folds and a gentle fabric sheen. ` +
+      `Match the room's existing lighting, shadows, perspective and white balance so the curtains look ` +
+      `professionally and naturally installed. ` +
+      `VERY IMPORTANT: keep everything else in the photo EXACTLY the same — do NOT change or move the walls, ` +
+      `furniture, floor, decor, objects, colors, layout, camera angle or lighting. Only add the curtains over the window. ` +
+      `Output one single photorealistic, professional, high-detail interior photograph.`;
     setGeminiPrompt(prompt);
     try {
       await navigator.clipboard.writeText(prompt);
@@ -181,7 +195,10 @@ export default function RoomVisualizer() {
               <li>{L ? 'راح تطلع لك الصورة الواقعية على حسابك مجاناً.' : 'Get your realistic image free.'}</li>
             </ol>
 
-            <div className="mt-3 rounded-xl bg-ivory-deep p-3">
+            <p className="mt-3 mb-1 text-xs font-semibold text-ink">
+              {L ? 'النص الجاهز (بالإنجليزية لأدق نتيجة) — تم نسخه تلقائياً:' : 'Ready prompt (auto-copied):'}
+            </p>
+            <div className="rounded-xl bg-ivory-deep p-3" dir="ltr">
               <p className="text-xs leading-relaxed text-ink-muted">{geminiPrompt}</p>
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
