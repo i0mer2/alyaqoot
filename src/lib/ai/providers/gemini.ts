@@ -72,7 +72,23 @@ export const geminiProvider: AIProvider = {
 
     if (!res.ok) {
       const errTxt = await res.text();
-      throw new Error(`Gemini error ${res.status}: ${errTxt.slice(0, 300)}`);
+      // رسائل عربية واضحة لأكثر الأخطاء شيوعاً
+      if (res.status === 429) {
+        throw new Error(
+          'تجاوزت الحصة المجانية لنموذج الصور في Gemini. لتشغيل الدمج الواقعي بثبات، فعّل الفوترة في Google AI Studio (رخيص جداً ~٤ سنت/صورة)، أو انتظر تجديد الحصة المجانية يومياً.',
+        );
+      }
+      if (res.status === 403) {
+        throw new Error(
+          'المفتاح غير مخوّل لاستخدام نموذج الصور. فعّل خدمة Generative Language API والفوترة لهذا المشروع.',
+        );
+      }
+      if (res.status === 404) {
+        throw new Error(
+          'اسم النموذج غير متاح لمفتاحك. جرّب تغيير GEMINI_IMAGE_MODEL إلى gemini-2.0-flash-preview-image-generation.',
+        );
+      }
+      throw new Error(`خطأ Gemini ${res.status}: ${errTxt.slice(0, 200)}`);
     }
 
     const json: any = await res.json();
